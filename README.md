@@ -1,38 +1,64 @@
-# Crazyflie Firmware  [![CI](https://github.com/bitcraze/crazyflie-firmware/workflows/CI/badge.svg)](https://github.com/bitcraze/crazyflie-firmware/actions?query=workflow%3ACI)
+# WS2812: перенос управления на PB8 / TIM4_CH3
 
-This project contains the source code for the firmware used in the Crazyflie range of platforms, including the Crazyflie 2.x and the Roadrunner.
+Этот файл описывает изменения в прошивке, выполненные для переноса вывода управления светодиодной лентой **WS2812** на **PB8** и использования **TIM4_CH3**.
 
-### Crazyflie 1.0 support
+## Что было / что стало
 
-The 2017.06 release was the last release with Crazyflie 1.0 support. If you want
-to play with the Crazyflie 1.0 and modify the code, please clone this repo and
-branch off from the 2017.06 tag.
+- **Было**: `PB5` + `TIM3_CH2` (через `TIM3->CCR2` + DMA)
+- **Стало**: `PB8` + `TIM4_CH3` (через `TIM4->CCR3` + DMA)
 
-## Building and Flashing
-See the [building and flashing instructions](https://github.com/bitcraze/crazyflie-firmware/blob/master/docs/building-and-flashing/build.md) in the github docs folder.
+## Изменённые файлы (с номерами строк) и зачем
 
+### `src/drivers/src/ws2812_cf2.c`
 
-## Official Documentation
+Изменения в инициализации/передаче WS2812:
 
-Check out the [Bitcraze crazyflie-firmware documentation](https://www.bitcraze.io/documentation/repository/crazyflie-firmware/master/) on our website.
+- **Линии 71–89 (GPIO + AF)**
+  - **Что**: включение тактирования `GPIOB` и перенос таймерного вывода на `PB8` (`GPIO_Pin_8`) + `GPIO_AF_TIM4` (`GPIO_PinAFConfig(... PinSource8 ...)`).
+  - **Зачем**: вывести сигнал WS2812 на **PB8**, который соответствует **TIM4_CH3**.
+  - **Примечание**: линии 82–85 (настройка `PB4` как `GPIO_Mode_OUT`) оставлены как были — это не таймерный вывод WS2812.
 
-## Generated documentation
+- **Линии 72, 98–109 (Timer: TIM4, CH3 PWM)**
+  - **Что**: `TIM3` → `TIM4`, `CH2` → `CH3` (`TIM_OC3Init`, `TIM_OC3PreloadConfig`).
+  - **Зачем**: сформировать PWM-тайминг WS2812 на **TIM4_CH3** (выход на `PB8`).
 
-The easiest way to generate the API documentation is to use the [toolbelt](https://github.com/bitcraze/toolbelt)
+- **Линии 111–149 (DMA на TIM4->CCR3 + NVIC)**
+  - **Что**: DMA перенесён на `DMA1_Stream7`, `DMA_Channel_2`, адрес периферии `&TIM4->CCR3`, IRQ `DMA1_Stream7_IRQn`.
+  - **Зачем**: подавать значения сравнения напрямую в `CCR3` по DMA, чтобы выдерживать точный протокол WS2812 без нагрузки на CPU.
+  - **Что ещё**: `TIM_DMACmd(TIM4, TIM_DMA_CC3, ENABLE)` (линия 149) — включение DMA-запросов на событие `CC3`.
 
-```tb build-docs```
+- **Линии 203–205 (`ws2812Send`)**
+  - **Что**: запуск передачи через `DMA1_Stream7` и `TIM4`.
+  - **Зачем**: фактически стартовать отправку буфера WS2812 на новом TIM/DMA.
 
-and to view it in a web page
+- **Линии 216–247 и 222–232 (`ws2812DmaIsr`)**
+  - **Что**: обработка `HT/TC` прерываний для `DMA1_Stream7` (`HTIF7/TCIF7`), остановка `TIM4` и `DMA1_Stream7` по завершению.
+  - **Зачем**: корректно обновлять половины DMA-буфера и завершать транзакцию WS2812.
 
-```tb docs```
+- **Линии 253–256 (IRQ handler)**
+  - **Что**: `DMA1_Stream7_IRQHandler()` вызывает `ws2812DmaIsr()`.
+  - **Зачем**: привязать ISR к новому DMA stream.
 
-## Contribute
-Go to the [contribute page](https://www.bitcraze.io/contribute/) on our website to learn more.
+### `src/deck/drivers/src/ledring12.c`
 
-### Test code for contribution
+Исправлено описание используемых ресурсов deck-драйвера, чтобы оно соответствовало фактическому использованию после переноса WS2812:
 
-To run the tests please have a look at the [unit test documentation](https://www.bitcraze.io/documentation/repository/crazyflie-firmware/master/development/unit_testing/).
+- **Линии 1249–1250 (Deck resource map)**
+  - **Что**: `.usedPeriph = DECK_USING_TIMER4` (вместо `DECK_USING_TIMER3`), `.usedGpio = DECK_USING_IO_1 | DECK_USING_IO_3` (вместо `IO_2 | IO_3`).
+  - **Зачем**: чтобы подсистема deck корректно видела занятые ресурсы: **IO1=PB8** (данные WS2812 через TIM4_CH3) и **IO3=PB4** (GPIO, как и раньше).
 
-## License
+Причина:
 
-The code is licensed under LGPL-3.0
+- `IO_1` соответствует `PB8` (TIM4_CH3) — новый вывод данных WS2812
+- `IO_3` соответствует `PB4` — остаётся используемым как обычный GPIO (как и раньше в коде)
+
+## Сборка/проверка
+
+- Собрать прошивку из корня репозитория:
+
+```bash
+make
+```
+
+Если появятся ошибки конфликтов по `TIM4` или `DMA1_Stream7` (заняты другим модулем в вашей конфигурации), нужно будет выбрать альтернативный TIM/канал/DMA либо отключить конфликтующий функционал.
+
