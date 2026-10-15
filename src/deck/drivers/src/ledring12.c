@@ -255,7 +255,7 @@ static void whiteSpinEffect(uint8_t buffer[][3], bool reset)
   COPY_COLOR(buffer[(CONFIG_DECK_LEDRING_NBR_LEDS-1)], temp);
 }
 
-static uint8_t solidRed=20, solidGreen=20, solidBlue=20;
+static uint8_t solidRed=0, solidGreen=0, solidBlue=255;
 static void solidColorEffect(uint8_t buffer[][3], bool reset)
 {
   int i;
@@ -336,17 +336,20 @@ static void boatEffect(uint8_t buffer[][3], bool reset)
 
 #if CONFIG_DECK_LEDRING_NBR_LEDS > 12
 static const uint8_t colorRing[CONFIG_DECK_LEDRING_NBR_LEDS][3] = {
-  {0,0,32}, {0,0,16}, {0,0,8},
-  {0,0,4}, {16,16,16}, {8,8,8},
-  {4,4,4}, {32,0,0},{16,0,0},
-  {8,0,0}, {4,0,0}, {2,0,0},
+  {0,0,255}, {0,0,255}, {0,0,255},
+  {0,0,255}, {0,0,255}, {0,0,255},
+  {0,0,255}, {0,0,255}, {0,0,255},
+  {0,0,255}, {255,0,255}, {255,0,255},
+  {255,0,255}, {255,0,255}, {255,0,255},
+  {255,0,255}, {255,0,255}, {255,0,255},
+  {255,0,255}, {255,0,255}, {255,0,255},
 };
 #else
 static const uint8_t colorRing[][3] = {
-  {0,0,32}, {0,0,16}, {0,0,8},
-  {0,0,4}, {16,16,16}, {8,8,8},
-  {4,4,4},{32,0,0},{16,0,0},
-  {8,0,0}, {4,0,0}, {2,0,0},
+  {0,0,255}, {255,0,255}, {0,0,255},
+  {255,0,255}, {0,0,255}, {255,0,255},
+  {0,0,255},{255,0,255},{0,0,255},
+  {255,0,255}, {0,0,255}, {255,0,255},
 };
 #endif
 
@@ -570,10 +573,8 @@ static void brightnessEffect(uint8_t buffer[][3], bool reset)
 
 static void setHeadlightsOn(bool on)
 {
-  if (on)
-    GPIO_SetBits(GPIOB, GPIO_Pin_4);
-  else
-    GPIO_ResetBits(GPIOB, GPIO_Pin_4);
+  // Headlight disabled: PB4 is used as BigQuad M2/S2 PWM output
+  (void)on;
 }
 
 
@@ -1071,17 +1072,17 @@ static void ledring12Init(DeckInfo *info)
     return;
   }
 
-  GPIO_InitTypeDef GPIO_InitStructure;
+//  GPIO_InitTypeDef GPIO_InitStructure;
 
   ws2812Init();
 
   neffect = sizeof(effectsFct)/sizeof(effectsFct[0])-1;
 
-  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
-  GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
-  GPIO_InitStructure.GPIO_PuPd  = GPIO_PuPd_NOPULL;
-  GPIO_InitStructure.GPIO_Pin = GPIO_Pin_4;
-  GPIO_Init(GPIOB, &GPIO_InitStructure);
+  // GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
+  // GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
+  // GPIO_InitStructure.GPIO_PuPd  = GPIO_PuPd_NOPULL;
+  // GPIO_InitStructure.GPIO_Pin = GPIO_Pin_4;
+  // GPIO_Init(GPIOB, &GPIO_InitStructure);
 
   memoryRegisterHandler(&ledringmemDef);
   memoryRegisterHandler(&timingmemDef);
@@ -1246,8 +1247,8 @@ static const DeckDriver ledring12_deck = {
   .pid = 0x01,
   .name = "bcLedRing",
 
-  .usedPeriph = DECK_USING_TIMER3,
-  .usedGpio = DECK_USING_IO_2 | DECK_USING_IO_3,
+  .usedPeriph = DECK_USING_TIMER4,
+  .usedGpio = DECK_USING_IO_1,
 
   .init = ledring12Init,
 };

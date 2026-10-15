@@ -58,7 +58,7 @@ static int count = 0;
 NO_DMA_CCM_SAFE_ZERO_INIT static DeckInfo deckInfos[DECK_MAX_COUNT];
 
 static void enumerateDecks(void);
-static void checkPeriphAndGpioConflicts(void);
+//static void checkPeriphAndGpioConflicts(void);
 
 static void scanRequiredSystemProperties(void);
 static StateEstimatorType requiredEstimator = StateEstimatorTypeAutoSelect;
@@ -73,7 +73,7 @@ void deckInfoInit()
   if (isInit) return;
 
   enumerateDecks();
-  checkPeriphAndGpioConflicts();
+  //checkPeriphAndGpioConflicts();
   scanRequiredSystemProperties();
 
   isInit = true;
@@ -184,45 +184,45 @@ static void enumerateDecks(void)
   return;
 }
 
-static void checkPeriphAndGpioConflicts(void)
-{
-  bool noError = true;
-  uint32_t usedPeriph = 0;
-  uint32_t usedGpio = 0;
+// static void checkPeriphAndGpioConflicts(void)
+// {
+//   bool noError = true;
+//   uint32_t usedPeriph = 0;
+//   uint32_t usedGpio = 0;
 
-  for (int i = 0; i < count; i++)
-  {
-    uint32_t matchPeriph = usedPeriph & deckInfos[i].driver->usedPeriph;
-    if (matchPeriph != 0) {
-      //
-      // Here we know that two decks share a periph, that is only ok if it is a
-      // bus. So, we check if the matching periphs contain a non-bus peripheral
-      // by ANDing with the inverse of a mask made up with all bus peripherals.
-      //
-      uint32_t bus_mask = ~(DECK_USING_I2C | DECK_USING_SPI);
-      if ((matchPeriph & bus_mask) != 0) {
-        DEBUG_PRINT("ERROR: Driver Periph usage conflicts with a "
-                    "previously enumerated deck driver. No decks will be "
-                    "initialized!\n");
-        noError = false;
-      }
-    }
+//   for (int i = 0; i < count; i++)
+//   {
+//     uint32_t matchPeriph = usedPeriph & deckInfos[i].driver->usedPeriph;
+//     if (matchPeriph != 0) {
+//       //
+//       // Here we know that two decks share a periph, that is only ok if it is a
+//       // bus. So, we check if the matching periphs contain a non-bus peripheral
+//       // by ANDing with the inverse of a mask made up with all bus peripherals.
+//       //
+//       uint32_t bus_mask = ~(DECK_USING_I2C | DECK_USING_SPI);
+//       if ((matchPeriph & bus_mask) != 0) {
+//         DEBUG_PRINT("ERROR: Driver Periph usage conflicts with a "
+//                     "previously enumerated deck driver. No decks will be "
+//                     "initialized!\n");
+//         noError = false;
+//       }
+//     }
 
-    if (usedGpio & deckInfos[i].driver->usedGpio) {
-      DEBUG_PRINT("ERROR: Driver Gpio usage conflicts with a "
-                  "previously enumerated deck driver. No decks will be "
-                  "initialized!\n");
-      noError = false;
-    }
+//     if (usedGpio & deckInfos[i].driver->usedGpio) {
+//       DEBUG_PRINT("ERROR: Driver Gpio usage conflicts with a "
+//                   "previously enumerated deck driver. No decks will be "
+//                   "initialized!\n");
+//       noError = false;
+//     }
 
-    usedPeriph |= deckInfos[i].driver->usedPeriph;
-    usedGpio |= deckInfos[i].driver->usedGpio;
-  }
+//     usedPeriph |= deckInfos[i].driver->usedPeriph;
+//     usedGpio |= deckInfos[i].driver->usedGpio;
+//   }
 
-  if (!noError) {
-    count = 0;
-  }
-}
+//   if (!noError) {
+//     count = 0;
+//   }
+// }
 
 static void scanRequiredSystemProperties(void)
 {

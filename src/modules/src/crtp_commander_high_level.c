@@ -79,9 +79,9 @@ struct trajectoryDescription
 } __attribute__((packed));
 
 // allocate memory to store trajectories
-// 4k allows us to store 31 poly4d pieces
+// 8k allows us to store 62 poly4d pieces
 // other (compressed) formats might be added in the future
-#define TRAJECTORY_MEMORY_SIZE 4096
+#define TRAJECTORY_MEMORY_SIZE 8192
 
 #define ALL_GROUPS 0
 
