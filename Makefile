@@ -153,7 +153,7 @@ endif
 
 unit:
 # The flag "-DUNITY_INCLUDE_DOUBLE" allows comparison of double values in Unity. See: https://stackoverflow.com/a/37790196
-	rake unit "DEFINES=$(ARCH_CFLAGS) -DUNITY_INCLUDE_DOUBLE" "FILES=$(FILES)" "UNIT_TEST_STYLE=$(UNIT_TEST_STYLE)"
+	rake unit "DEFINES=$(filter-out -DDEVICE_TYPE_STRING_FORCE=%,$(ARCH_CFLAGS)) -DUNITY_INCLUDE_DOUBLE" "FILES=$(FILES)" "UNIT_TEST_STYLE=$(UNIT_TEST_STYLE)"
 
 #Flash the stm.
 flash:
