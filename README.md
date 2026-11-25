@@ -40,7 +40,6 @@
 | `src/deck/core/deck_info.c` | Отключена проверка конфликтов периферии и GPIO между деками |
 | `src/deck/drivers/src/Kconfig` | Настройки драйверов дек |
 | `Makefile` | Принудительно задан тип платы `CF21` |
-| `src/modules/src/crtp_commander_high_level.c` | _TODO: описать изменение_ |
 
 ---
 
@@ -149,10 +148,6 @@ ARCH_CFLAGS += -DDEVICE_TYPE_STRING_FORCE="CF21"
 ```
 
 Принудительно задаёт тип платы `CF21`, чтобы прошивка не зависела от типа устройства, записанного в OTP-памяти.
-
-### `src/modules/src/crtp_commander_high_level.c`
-
-_TODO: описать изменение (4 строки)._
 
 ---
 
